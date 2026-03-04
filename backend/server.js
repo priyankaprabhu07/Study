@@ -7,6 +7,8 @@ app.get('/logs',(req,res)=>{
     res.send('basic log page');
 });
 
+
+
 app.listen(port,()=>{
     console.log('server is running');
 });
