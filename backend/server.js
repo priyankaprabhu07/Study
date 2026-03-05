@@ -13,6 +13,10 @@ app.get('/data',(req,res)=>{
     res.json({message:'Bob is a good boy'});
 });
 
+app.get('/test',(req,res)=>{
+    res.json({name:'bob',age:20,place:'mangalore'});
+});
+
 
 app.listen(port,()=>{
     console.log('server is running');
