@@ -1,8 +1,13 @@
-import React from 'react'
+import React from "react"
+import { Route, Routes } from "react-router-dom"
+import Home from "./Home"
 
-export default function App() {
+function App() {
   return (
-    <div className='text-2xl'>App</div>
+    <Routes>
+     <Route path="/" element={<Home />} />
+    </Routes>
   )
 }
 
+export default App
