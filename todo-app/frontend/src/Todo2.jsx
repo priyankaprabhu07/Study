@@ -1,172 +1,217 @@
-import React, { useState } from 'react'
-import { Trash2, Edit, Pencil } from 'lucide-react'
+import React, { useState, useEffect } from 'react'
+import { Trash2, Pencil } from 'lucide-react'
 import axios from "axios";
-import { useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 
 export default function Todo2() {
 
     const [task, setTask] = useState("")
     const [todos, settodos] = useState([])
-    const [searchInput, setSearchInput] = useState("");
-    const [search, setSearch] = useState("");
+    const [searchInput, setSearchInput] = useState("")
 
+    const navigate = useNavigate();
+    const user = JSON.parse(localStorage.getItem("user"));
 
+    // ✅ DRAG FUNCTIONS
+    function handleDragStart(e, index) {
+        e.dataTransfer.setData("dragIndex", index);
+    }
+
+    function handleDrop(e, index) {
+        const dragIndex = e.dataTransfer.getData("dragIndex");
+
+        const newTodos = [...todos];
+        const draggedItem = newTodos[dragIndex];
+
+        newTodos.splice(dragIndex, 1);
+        newTodos.splice(index, 0, draggedItem);
+
+        settodos(newTodos);
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+    }
+
+    // ✅ ADD TASK
     async function Addtask() {
-        if (task === "") return
-        if (todos.includes(task)) {
-            alert("Task already exists")
-            return
-        }
+        if (!task) return
+
         try {
-            const response = await axios.post(
-                "http://localhost:5000/api/todos",
-                {
-                    text: task   // 👈 sending task to backend
-                }
-            );
+            const res = await axios.post("http://localhost:5000/api/todos", {
+                text: task
+            })
 
-            // add newly created todo from backend
-            settodos([...todos, response.data]);
+            settodos([...todos, res.data])
+            setTask("")
 
-            setTask("");
-
-        } catch (error) {
-            console.error("Error adding task:", error);
+        } catch (err) {
+            console.log(err)
         }
     }
 
-    function deleteTask(index) {
-        const newTodos = [...todos]
-        newTodos.splice(index, 1)
-        settodos(newTodos)
-    }
-
+    // ✅ DELETE
     async function deleteTask(id) {
-    try {
-        // call backend delete API with id
-        await axios.delete(`http://localhost:5000/api/todos/${id}`);
-
-        // update UI after delete
-        settodos(todos.filter(todo => todo._id !== id));
-
-    } catch (error) {
-        console.error("Error deleting task:", error);
-    }
-}
-    function edittask(index) {
-        const newTodos = [...todos]
-        const newtask = prompt("Enter new task")
-        if (newtask === null || newtask === "") return
-        newTodos[index] = newtask
-        settodos(newTodos)
+        try {
+            await axios.delete(`http://localhost:5000/api/todos/${id}`)
+            settodos(todos.filter(t => t._id !== id))
+        } catch (err) {
+            console.log(err)
+        }
     }
 
+    // ✅ EDIT
     async function edittask(id) {
-    const newtask = prompt("Enter new task");
+        const newtask = prompt("Enter new task")
+        if (!newtask) return
 
-    if (!newtask) return;
-
-    try {
-        const response = await axios.put(
-            `http://localhost:5000/api/todos/${id}`,
-            {
-                text: newtask
-            }
-        );
-
-        // update UI with updated todo
-        settodos(
-            todos.map(todo =>
-                todo._id === id ? response.data : todo
+        try {
+            const res = await axios.put(
+                `http://localhost:5000/api/todos/${id}`,
+                { text: newtask }
             )
-        );
 
-    } catch (error) {
-        console.error("Error updating task:", error);
-    }
-}
+            settodos(todos.map(t => t._id === id ? res.data : t))
 
-    
-
-    const filteredTodos = todos.filter((todo) =>
-        todo.text.toLowerCase().includes(search.toLowerCase())
-    );
-
-
-    function handleSearch() {
-        setSearch(searchInput);
+        } catch (err) {
+            console.log(err)
+        }
     }
 
-    async function handleSearch() {
-    if (!searchInput) return;
+    // ✅ CHECKBOX TOGGLE
+    async function toggleComplete(id, status) {
+        try {
+            const res = await axios.put(
+                `http://localhost:5000/api/todos/${id}`,
+                { completed: !status }
+            )
 
-    try {
-        const response = await axios.get(
-            `http://localhost:5000/api/todos/search/${searchInput}`
-        );
+            settodos(todos.map(t => t._id === id ? res.data : t))
 
-        settodos(response.data); // replace todos with searched results
-
-    } catch (error) {
-        console.error("Error searching:", error);
+        } catch (err) {
+            console.log(err)
+        }
     }
-}
 
+    // ✅ GET TODOS
     async function getTodos() {
         try {
-            const response = await axios.get("http://localhost:5000/api/todos");
-
-            console.log(response.data); // check data
-
-            // Assuming backend returns array of todos
-            settodos(response.data);
-
-        } catch (error) {
-            console.error("Error fetching todos:", error);
+            const res = await axios.get("http://localhost:5000/api/todos")
+            settodos(res.data)
+        } catch (err) {
+            console.log(err)
         }
     }
 
+    // ✅ SEARCH
+    async function handleSearch() {
+        if (!searchInput) return getTodos()
+
+        try {
+            const res = await axios.get(
+                `http://localhost:5000/api/todos/search/${searchInput}`
+            )
+            settodos(res.data)
+        } catch (err) {
+            console.log(err)
+        }
+    }
+
+    // ✅ AUTH CHECK
     useEffect(() => {
-        getTodos()
-    }, [])
+        const storedUser = localStorage.getItem("user");
+
+        if (!storedUser) {
+            navigate("/login");
+        } else {
+            getTodos();
+        }
+    }, []);
+
+    // ✅ LOGOUT
+    const handleLogout = () => {
+        localStorage.removeItem("user");
+        navigate("/login");
+    }
 
     return (
-        <div className='w-full h-screen flex flex-col justify-center items-center'>
-            <div className='mb-2 bg-amber-950 w-fit text-white p-2 rounded'>Todo2 List</div>
-            <div className='mb-4 flex gap-2'  >
-                <input
-                    type="text"
-                    placeholder="Search" className='border w-64 p-2'
-                    value={searchInput}
-                    onChange={(e) => setSearchInput(e.target.value)}
-                />
-                <div className='gap-2 flex'>
-                    {searchInput && (
-                        <button onClick={() => setSearchInput("")}>Clear</button>
-                    )}
-                    <button className='bg-amber-950 w-fit text-white p-2 rounded' onClick={handleSearch}>Search</button>
+        <div className='w-full min-h-screen flex flex-col items-center'>
+
+            {/* 🔥 TOP BAR */}
+            <div className='w-full flex justify-center items-center bg-amber-950 text-white p-4'>
+                <h1 className='font-bold'>Todo2 List</h1>
+
+                <div className='flex items-center gap-4 absolute right-4'>
+                    <p>👤 {user?.name}</p>
+                    <button
+                        onClick={handleLogout}
+                        className='bg-white text-amber-950 px-3 py-1 rounded'
+                    >
+                        Logout
+                    </button>
                 </div>
             </div>
-            <div className='flex gap-2'>
-                <input type="text" placeholder='Enter Task' className='border w-68 p-2' maxLength='15' value={task} onChange={(e) => setTask(e.target.value)} />
-                <button className='bg-amber-950 w-fit text-white p-2 rounded' onClick={Addtask}>Add</button>
-            </div>
-            <p className='text-amber-950 font-bold'>Notes</p>
-            <ul>
-                {filteredTodos.length === 0 ? (
-                    <p className='text-amber-950'>No tasks found</p>
-                ) : (
-                    todos.map((todo, index) =>
-                        <div className='flex gap-36 items-center mb-2 p-2 rounded-full bg-gray-300' key={index}>
-                            <li className='w-11 text-amber-950'>{todo.text}</li>
-                            <div className='flex gap-2 items-center'>
-                                <Trash2 onClick={() => deleteTask(todo._id)} className='cursor-pointer hover:text-red-500' />
-                                <Pencil onClick={() => edittask(todo._id)} className='cursor-pointer hover:text-blue-500' />
-                            </div>
-                        </div>
-                    ))}
-            </ul>
-        </div>
 
+            {/* CONTENT */}
+            <div className='flex flex-col items-center mt-6'>
+
+                {/* SEARCH */}
+                <div className='flex gap-2 mb-4'>
+                    <input
+                        type="text"
+                        placeholder="Search"
+                        className='border w-64 p-2'
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                    />
+                    <button onClick={handleSearch} className='bg-amber-950 text-white p-2 rounded'>
+                        Search
+                    </button>
+                </div>
+
+                {/* ADD */}
+                <div className='flex gap-2 mb-3'>
+                    <input
+                        type="text"
+                        placeholder="Enter Task"
+                        className='border w-64 p-2'
+                        value={task}
+                        onChange={(e) => setTask(e.target.value)}
+                    />
+                    <button onClick={Addtask} className='bg-amber-950 text-white p-2 rounded'>
+                        Add
+                    </button>
+                </div>
+
+                <p className='font-bold text-amber-950 mb-2'>Notes</p>
+
+                {/* ✅ DRAG & DROP TODOS */}
+                {todos.map((todo, index) => (
+                    <div
+                        key={todo._id}
+                        className='flex items-center gap-3 bg-gray-300 p-2 rounded-full mb-2'
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, index)}
+                        onDrop={(e) => handleDrop(e, index)}
+                        onDragOver={handleDragOver}
+                    >
+
+
+                        <input
+                            type="checkbox"
+                            checked={todo.completed}
+                            onChange={() => toggleComplete(todo._id, todo.completed)}
+                        />
+
+                        <span className='w-40'>{todo.text}</span>
+
+                        <Trash2 onClick={() => deleteTask(todo._id)} className='cursor-pointer hover:text-red-500' />
+                        <Pencil onClick={() => edittask(todo._id)} className='cursor-pointer hover:text-blue-500' />
+
+                    </div>
+                ))}
+
+            </div>
+        </div>
     )
 }
