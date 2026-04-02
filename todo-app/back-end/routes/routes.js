@@ -5,9 +5,14 @@ const router = express.Router();
 
 
 // ✅ Get all todos
-router.get("/", async (req, res) => {
+router.get("/:user", async (req, res) => {
   try {
-    const todos = await Todo.find();
+    const userId = req.params.user;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User ID required" });
+    }
+    const todos = await Todo.find({ user: userId });
     res.json(todos);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -20,6 +25,7 @@ router.post("/", async (req, res) => {
   try {
     const newTodo = new Todo({
       text: req.body.text,
+      user: req.body.userId
     });
 
     const saved = await newTodo.save();

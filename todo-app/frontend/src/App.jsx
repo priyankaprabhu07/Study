@@ -4,6 +4,8 @@ import Todo from "./Todo"
 import Todo2 from "./Todo2"
 import Login from "./Login"
 import Register from "./Register"
+import Passwordgen from "./Passwordgen"
+import Photoedit from "./photoedit"
 
 
 function App() {
@@ -15,6 +17,8 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/todo" element={<Todo />} />
         <Route path="/todo2" element={<Todo2 />} />
+        <Route path="/passwordgen" element={<Passwordgen />} />
+        <Route path="/photoedit" element={<Photoedit />} />
       </Routes>
     </BrowserRouter>
   )

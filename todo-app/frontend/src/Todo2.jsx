@@ -39,7 +39,8 @@ export default function Todo2() {
 
         try {
             const res = await axios.post("http://localhost:5000/api/todos", {
-                text: task
+                text: task,
+                userId: user._id
             })
 
             settodos([...todos, res.data])
@@ -96,7 +97,7 @@ export default function Todo2() {
     // ✅ GET TODOS
     async function getTodos() {
         try {
-            const res = await axios.get("http://localhost:5000/api/todos")
+            const res = await axios.get(`http://localhost:5000/api/todos/${user._id}`)
             settodos(res.data)
         } catch (err) {
             console.log(err)
@@ -203,7 +204,7 @@ export default function Todo2() {
                             onChange={() => toggleComplete(todo._id, todo.completed)}
                         />
 
-                        <span className='w-40'>{todo.text}</span>
+                        <span className={`w-40 ${todo.completed ? 'line-through text-gray-500' : ''}`}>{todo.text}</span>
 
                         <Trash2 onClick={() => deleteTask(todo._id)} className='cursor-pointer hover:text-red-500' />
                         <Pencil onClick={() => edittask(todo._id)} className='cursor-pointer hover:text-blue-500' />
